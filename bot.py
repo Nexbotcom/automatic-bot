@@ -314,6 +314,9 @@ def monitor():
         if not (hit_sl or hit_tp):
             continue
         outcome = "SL" if hit_sl else "TP"
+        if outcome == "TP":
+            px = t["tp"]
+            pnl = TP_POINTS
         close_trade(t["id"], outcome, px, pnl)
         icon = "✅" if outcome == "TP" else "❌"
         send_telegram(
