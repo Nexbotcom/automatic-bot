@@ -369,6 +369,9 @@ def main():
     API_PASS = os.environ["BITGET_API_PASSPHRASE"]
     SYMBOL = os.environ.get("CFD_SYMBOL", "XAUUSD")
     DB_PATH = os.environ.get("DB_PATH", "gold_3m_executor.db")
+    db_dir = os.path.dirname(DB_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
     mode = os.environ.get("MODE", "PAPER").upper()
     if mode != "PAPER":
         log(f"MODE={mode} is not supported yet. Only PAPER is available. Exiting.")
