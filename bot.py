@@ -488,7 +488,7 @@ def open_paper_trade(direction, entry, spread, signal_ts, info=""):
     tid = insert_trade(direction, entry, sl, tp, spread, signal_ts, info)
     icon = "🔴" if direction == "sell" else "🟢"
     send_telegram(
-        f"{icon} *GOLD 5M {direction.upper()}* (#{tid}) [PAPER]\n"          # <- 3M bot: write 3M
+        f"{icon} *GOLD 3M {direction.upper()}* (#{tid}) [PAPER]\n"          # <- 3M bot: write 3M
         f"Entry: `{entry:.2f}`\nSL: `{sl:.2f}`\nTP: `{tp:.2f}`\n"
         f"Spread: `{spread:.2f}`\n{info}")
 
@@ -519,7 +519,7 @@ def monitor():
         close_trade(t["id"], outcome, px, pnl)
         icon = "✅" if outcome == "TP" else "❌"
         send_telegram(
-            f"{icon} *GOLD 5M {t['side'].upper()} #{t['id']} closed: {outcome}* [PAPER]\n"   # <- 3M bot: write 3M
+            f"{icon} *GOLD 3M {t['side'].upper()} #{t['id']} closed: {outcome}* [PAPER]\n"   # <- 3M bot: write 3M
             f"Entry `{t['entry']:.2f}` -> exit `{px:.2f}`\nResult: `{pnl:+.2f}` points\n"
             f"{t.get('info') or ''}")
         log(f"trade #{t['id']} {outcome} entry {t['entry']:.2f} exit {px:.2f} pnl {pnl:+.2f}")
