@@ -176,29 +176,39 @@ def parse_rows(data):
 
 def raw_1m(side, minutes):
     """1m candles for the last `minutes` minutes. Bitget returns at most 100 per
-    request, so this asks again from where the last answer stopped.
+    request (the newest 100 in the range), so this pages backwards with endTime.
     side='sell' = bid-based candles, side='buy' = ask-based candles."""
     now_ms = int(time.time() * 1000)
     start = now_ms - minutes * 60000
     rows = {}
-    for _ in range(6):
+
+    def grab(s, e):
         data = api_get("/api/v3/cfd/market/history-candlestick", {
             "symbol": SYMBOL, "interval": "1m", "side": side,
-            "startTime": str(start), "limit": "100"})
-        if not data:
-            break
-        got = parse_rows(data)
+            "startTime": str(s), "endTime": str(e), "limit": "100"})
+        got = parse_rows(data) if data else []
         for r in got:
             rows[r[0]] = r
-        last = max(r[0] for r in got)
-        if len(got) < 100 or last >= now_ms - 60000:
-            break
-        nxt = last + 60000
-        if nxt <= start:                                # no progress, stop
-            break
-        start = nxt
-    return [rows[k] for k in sorted(rows)]
+        return got
 
+    end = now_ms + 60000
+    for _ in range(6):                                  # go backwards, 100 candles at a time
+        got = grab(start, end)
+        if not got:
+            break
+        oldest = min(r[0] for r in got)
+        if oldest <= start or len(got) < 100 or oldest >= end:
+            break
+        end = oldest                                    # next page: candles before the oldest so far
+    for _ in range(3):                                  # safety: fill any gap up to now
+        newest = max(rows) if rows else None
+        if newest is None or newest >= now_ms - 120000:
+            break
+        got = grab(newest + 60000, now_ms + 60000)
+        if not got or max(r[0] for r in got) <= newest:
+            break
+    return [rows[k] for k in sorted(rows)]
+        
 
 def build_from_1m(rows, now_ms):
     """Group 1m candles into closed candles of TF_MIN minutes aligned to the clock.
