@@ -10,6 +10,7 @@ SL_PCT = 0.01      # stop loss 1% below entry
 RR = 2             # take profit = 2x the risk
 FEE = 0.001        # 0.1% per side
 SLEEP = 30         # seconds between checks
+HB_EVERY = 3600    # Telegram heartbeat every hour
 
 TG_TOKEN = os.environ.get("TG_TOKEN", "")
 TG_CHAT = os.environ.get("TG_CHAT", "")
@@ -22,10 +23,12 @@ pos = None
 trades = 0
 wins = 0
 last_candle_ts = None
+last_hb = time.time()
+price = 0
 
 
 def notify(msg):
-    print(msg)
+    print(msg, flush=True)
     if not TG_TOKEN or not TG_CHAT:
         return
     try:
@@ -35,7 +38,7 @@ def notify(msg):
             timeout=10,
         )
     except Exception as e:
-        print("telegram error:", e)
+        print("telegram error:", e, flush=True)
 
 
 def ema(vals, n):
@@ -81,10 +84,20 @@ while True:
                     f"| Total: {bal - START_BAL:+.2f}"
                 )
                 pos = None
+            else:
+                print(
+                    f"holding | price {price:.2f} | "
+                    f"SL {pos['sl']:.2f} | TP {pos['tp']:.2f}",
+                    flush=True,
+                )
 
         # ----- Look for entry -----
         else:
             signal, ts = get_signal()
+            print(
+                f"scan | price {price:.2f} | signal {signal} | no position",
+                flush=True,
+            )
             if signal and ts != last_candle_ts:
                 last_candle_ts = ts
                 sl = price * (1 - SL_PCT)
@@ -99,6 +112,14 @@ while True:
                 )
 
     except Exception as e:
-        print("loop error:", e)
+        print("loop error:", e, flush=True)
+
+    # ----- Hourly heartbeat -----
+    if time.time() - last_hb > HB_EVERY:
+        last_hb = time.time()
+        notify(
+            f"Alive. Price {price:.2f} | Balance ${bal:.2f} | "
+            f"Trades {trades} | {'In trade' if pos else 'Scanning'}"
+        )
 
     time.sleep(SLEEP)
